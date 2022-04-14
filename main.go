@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mercadolibre/csv-republisher/config"
-	"github.com/mercadolibre/csv-republisher/repository"
-	"github.com/mercadolibre/csv-republisher/tools/customcontext"
-	"github.com/mercadolibre/csv-republisher/tools/file"
-	"github.com/mercadolibre/csv-republisher/tools/restclient"
+	"github.com/csv-republisher/config"
+	"github.com/csv-republisher/repository"
+	"github.com/csv-republisher/tools/customcontext"
+	"github.com/csv-republisher/tools/file"
+	"github.com/csv-republisher/tools/restclient"
 )
 
 var (

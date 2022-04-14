@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mercadolibre/csv-republisher/tools/apierrors"
+	"github.com/csv-republisher/tools/apierrors"
 )
 
 type RestClient interface {

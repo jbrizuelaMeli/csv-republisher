@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mercadolibre/csv-republisher/model"
-	"github.com/mercadolibre/csv-republisher/tools/restclient"
+	"github.com/csv-republisher/model"
+	"github.com/csv-republisher/tools/restclient"
 )
 
 const FuryToken = "3712946dfa4ddb21c7ebd4a5b0fa64e266e8e899a45c2ae16f30d7444681541a"
