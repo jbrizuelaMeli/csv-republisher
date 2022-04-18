@@ -5,8 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
-	"time"
 
 	"github.com/csv-republisher/config"
 	"github.com/csv-republisher/repository"
@@ -65,68 +63,10 @@ func main() {
 	//Build context
 	ctx := customcontext.WithoutCancel(context.Background())
 
-	if republishConfig.ItemsPerRequest == 1 {
-		//Single mode
-		publishSingleMode(ctx, data, fileW, repo)
-	} else {
-		//MultiMode
-		publishMultiMode(ctx, data, fileW, repo)
-	}
+	//MultiMode
+	publishMultiMode(ctx, data, fileW, repo)
 
 	return
-}
-
-func publishSingleMode(ctx context.Context, data [][]string, fileW io.Writer, repo *repository.Repository) {
-	// limit concurrency
-	semaphore := make(chan struct{}, republishConfig.Goroutines)
-
-	// setting a max rate in req/sec
-	rate := make(chan struct{}, republishConfig.RequestPerSecond)
-	for i := 0; i < cap(rate); i++ {
-		rate <- struct{}{}
-	}
-
-	// leaky bucket
-	go func() {
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-		for range ticker.C {
-			_, ok := <-rate
-			// if this isn't going to run indefinitely, signal
-			// this to return by closing the rate channel.
-			if !ok {
-				return
-			}
-		}
-	}()
-
-	//Run
-	var wg sync.WaitGroup
-	for _, line := range data {
-		wg.Add(1)
-		go func(l []string) {
-			defer wg.Done()
-
-			// wait for the rate limiter
-			rate <- struct{}{}
-
-			// check the concurrency semaphore
-			semaphore <- struct{}{}
-			defer func() {
-				<-semaphore
-			}()
-
-			err := repo.Publish(ctx, l)
-			if err != nil {
-				log.Println(err.Error())
-				file.Write(fileW, l)
-				return
-			}
-			log.Printf("resource with ids:%v processed", l)
-		}(line)
-	}
-	wg.Wait()
-	close(rate)
 }
 
 func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, repo *repository.Repository) {

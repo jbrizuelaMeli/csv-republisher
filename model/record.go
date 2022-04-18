@@ -15,3 +15,12 @@ type StringIDs struct {
 type StringID struct {
 	ID string `json:"id"`
 }
+
+type MultiRequestNumericIDs struct {
+	IDs []NumericIDs `json:"ids"`
+}
+
+type MultiResponseNumericIDs struct {
+	IDs    []NumericIDs `json:"ids"`
+	Errors []NumericIDs `json:"errors"`
+}
