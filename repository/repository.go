@@ -9,7 +9,7 @@ import (
 	"github.com/csv-republisher/tools/restclient"
 )
 
-const FuryToken = "3712946dfa4ddb21c7ebd4a5b0fa64e266e8e899a45c2ae16f30d7444681541a"
+const FuryToken = "650f51ad799172a652e0dd3fb65565b393f19e6163b057438c7874ec0410c8df"
 
 type Repository struct {
 	restClient restclient.RestClient
@@ -40,24 +40,48 @@ func (r Repository) Publish(ctx context.Context, line []string) error {
 	return nil
 }
 
-func (r Repository) MultiPublish(ctx context.Context, lines [][]string) error {
+func (r Repository) MultiPublish(ctx context.Context, lines [][]string) (*model.ItemResponseMap, error) {
 	url, err := r.restClient.BuildUrl("cashback-api", "cashback-republish")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	request := &model.NumericIDs{}
+	itemReqMap := &model.ItemRequestMap{
+		Item: make(map[int64][]string),
+	}
+	bulkResponseMap := &model.ItemResponseMap{
+		Success: make(map[int64][]string),
+		Errors:  make(map[int64][]string),
+	}
+
+	request := &model.MultiRequestNumericIDs{}
 	for _, line := range lines {
 		id, err := strconv.ParseInt(strings.Join(line, ""), 10, 64)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		request.IDs = append(request.IDs, id)
+		item := model.NumericID{ID: id}
+		request.IDs = append(request.IDs, item)
+		itemReqMap.Item[id] = line
 	}
 
-	err = r.restClient.DoPost(ctx, url, request, nil, restclient.Header{Key: "X-Auth-Token", Value: FuryToken})
+	response := &model.MultiResponseNumericIDs{}
+	err = r.restClient.DoPost(ctx, url, request, response, restclient.Header{Key: "X-Auth-Token", Value: FuryToken})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	for _, item := range response.Errors {
+		if _, exist := itemReqMap.Item[item.ID]; exist {
+			bulkResponseMap.Errors[item.ID] = itemReqMap.Item[item.ID]
+		}
+	}
+
+	for _, item := range response.IDs {
+		if _, exist := itemReqMap.Item[item.ID]; exist {
+			bulkResponseMap.Success[item.ID] = itemReqMap.Item[item.ID]
+		}
+	}
+
+	return bulkResponseMap, nil
 }

@@ -1,15 +1,7 @@
 package model
 
-type NumericIDs struct {
-	IDs []int64 `json:"ids"`
-}
-
 type NumericID struct {
 	ID int64 `json:"id"`
-}
-
-type StringIDs struct {
-	IDs []string `json:"ids"`
 }
 
 type StringID struct {
@@ -17,10 +9,19 @@ type StringID struct {
 }
 
 type MultiRequestNumericIDs struct {
-	IDs []NumericIDs `json:"ids"`
+	IDs []NumericID `json:"ids"`
 }
 
 type MultiResponseNumericIDs struct {
-	IDs    []NumericIDs `json:"ids"`
-	Errors []NumericIDs `json:"errors"`
+	IDs    []NumericID `json:"ids"`
+	Errors []NumericID `json:"errors"`
+}
+
+type ItemRequestMap struct {
+	Item map[int64][]string
+}
+
+type ItemResponseMap struct {
+	Success map[int64][]string
+	Errors  map[int64][]string
 }

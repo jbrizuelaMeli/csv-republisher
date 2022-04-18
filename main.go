@@ -15,9 +15,7 @@ import (
 
 var (
 	republishConfig = config.RepublishConfig{
-		ItemsPerRequest:  1,
-		Goroutines:       6,
-		RequestPerSecond: 60,
+		ItemsPerRequest: 50,
 	}
 	restClientConfig = restclient.Config{
 		TimeoutMillis: 3000,
@@ -74,15 +72,21 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 	toPublish := make([][]string, 0)
 	for idx, line := range data {
 		toPublish = append(toPublish, line)
-		if idx%(republishConfig.ItemsPerRequest-1) == 0 && idx > 0 {
+		if republishConfig.ItemsPerRequest == len(toPublish) && idx > 0 {
 			//MultiPublish array
-			err := repo.MultiPublish(ctx, toPublish)
+			response, err := repo.MultiPublish(ctx, toPublish)
 			if err != nil {
 				log.Println(err.Error())
 				_ = file.WriteAll(fileW, toPublish)
 				continue
 			}
-			log.Printf("resource with ids:%v processed", toPublish)
+			for _, item := range response.Errors {
+				file.Write(fileW, item)
+			}
+			for _, item := range response.Success {
+				log.Printf("resource with id:%v processed", item)
+			}
+			toPublish = make([][]string, 0)
 		}
 	}
 }
