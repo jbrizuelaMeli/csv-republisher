@@ -15,7 +15,7 @@ import (
 
 var (
 	republishConfig = config.RepublishConfig{
-		ItemsPerRequest: 50,
+		ItemsPerRequest: 90,
 	}
 	restClientConfig = restclient.Config{
 		TimeoutMillis: 3000,
@@ -78,6 +78,7 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 			if err != nil {
 				log.Println(err.Error())
 				_ = file.WriteAll(fileW, toPublish)
+				toPublish = make([][]string, 0)
 				continue
 			}
 			for _, item := range response.Errors {
