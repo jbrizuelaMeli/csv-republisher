@@ -41,7 +41,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fileR.Close()
+	defer func() {
+		_ = fileR.Close()
+	}()
 	data, err := file.ReadAll(fileR, true)
 	if err != nil {
 		log.Fatal(err)
@@ -52,7 +54,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fileW.Close()
+	defer func() {
+		_ = fileW.Close()
+	}()
 
 	//Build repository
 	rc, err := restclient.NewRestClient(restClientConfig)
@@ -106,7 +110,11 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 		}
 		errorCounter += len(response.Errors)
 		for _, item := range response.Errors {
-			file.Write(fileW, item)
+			err = file.Write(fileW, item)
+			if err != nil {
+				log.Printf("Error writing to file: %s", err.Error())
+				break
+			}
 		}
 		if republishConfig.LogSuccessfulPush {
 			for _, item := range response.Success {
