@@ -15,8 +15,8 @@ import (
 
 var (
 	republishConfig = config.RepublishConfig{
-		ItemsPerRequest:   5,
-		LogSuccessfulPush: false,
+		ItemsPerRequest:   10,
+		LogSuccessfulPush: true,
 		LogErrorPush:      true,
 		LogProgress:       false,
 	}
@@ -73,15 +73,15 @@ func main() {
 //Multi mode
 func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, repo *repository.Repository) {
 	var processedLines, errorCounter int
-	toPublish := make([][]string, 0)
+	toPublish := make([][]string, 0, republishConfig.ItemsPerRequest)
 	var lastRecords bool
 	var total = len(data)
-	for idx, line := range data {
-		if total-idx < republishConfig.ItemsPerRequest {
-			toPublish = data[idx:]
+	for {
+		if total-processedLines < republishConfig.ItemsPerRequest {
+			toPublish = data[processedLines:]
 			lastRecords = true
 		} else {
-			toPublish = append(toPublish, line)
+			toPublish = data[processedLines : processedLines+republishConfig.ItemsPerRequest]
 		}
 		if republishConfig.LogProgress {
 			log.Printf("Records processed: %v of %v", processedLines, total)
@@ -95,7 +95,10 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 				}
 				errorCounter += len(toPublish)
 				_ = file.WriteAll(fileW, toPublish)
-				toPublish = make([][]string, 0)
+				processedLines += len(toPublish)
+				if lastRecords {
+					break
+				}
 				continue
 			}
 			errorCounter += len(response.Errors)
@@ -108,7 +111,6 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 				}
 			}
 			processedLines += len(toPublish)
-			toPublish = make([][]string, 0)
 			if lastRecords {
 				break
 			}
