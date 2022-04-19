@@ -96,7 +96,7 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 				errorCounter += len(toPublish)
 				_ = file.WriteAll(fileW, toPublish)
 				toPublish = make([][]string, 0)
-				return
+				continue
 			}
 			errorCounter += len(response.Errors)
 			for _, item := range response.Errors {
