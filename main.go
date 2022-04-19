@@ -86,34 +86,36 @@ func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, rep
 		if republishConfig.LogProgress {
 			log.Printf("Records processed: %v of %v", processedLines, total)
 		}
-		if republishConfig.ItemsPerRequest == len(toPublish) || lastRecords {
-			//MultiPublish array
-			response, err := repo.MultiPublish(ctx, toPublish)
+		//MultiPublish items
+		response, err := repo.MultiPublish(ctx, toPublish)
+		if err != nil {
+			if republishConfig.LogErrorPush {
+				log.Printf("Error publishing: %s", err.Error())
+			}
+			errorCounter += len(toPublish)
+			err = file.WriteAll(fileW, toPublish)
 			if err != nil {
-				if republishConfig.LogErrorPush {
-					log.Printf("Error at publishing: %s", err.Error())
-				}
-				errorCounter += len(toPublish)
-				_ = file.WriteAll(fileW, toPublish)
-				processedLines += len(toPublish)
-				if lastRecords {
-					break
-				}
-				continue
-			}
-			errorCounter += len(response.Errors)
-			for _, item := range response.Errors {
-				file.Write(fileW, item)
-			}
-			if republishConfig.LogSuccessfulPush {
-				for _, item := range response.Success {
-					log.Printf("resource with id:%v processed", item)
-				}
+				log.Printf("Error writing to file: %s", err.Error())
+				break
 			}
 			processedLines += len(toPublish)
 			if lastRecords {
 				break
 			}
+			continue
+		}
+		errorCounter += len(response.Errors)
+		for _, item := range response.Errors {
+			file.Write(fileW, item)
+		}
+		if republishConfig.LogSuccessfulPush {
+			for _, item := range response.Success {
+				log.Printf("resource with id:%v processed", item)
+			}
+		}
+		processedLines += len(toPublish)
+		if lastRecords {
+			break
 		}
 	}
 	log.Printf("Records processed: %v", processedLines)
