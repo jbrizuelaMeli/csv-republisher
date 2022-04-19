@@ -9,7 +9,7 @@ import (
 	"github.com/csv-republisher/tools/restclient"
 )
 
-const FuryToken = "650f51ad799172a652e0dd3fb65565b393f19e6163b057438c7874ec0410c8df"
+const FuryToken = "{token}"
 
 type Repository struct {
 	restClient restclient.RestClient
