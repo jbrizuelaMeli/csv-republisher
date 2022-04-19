@@ -1,7 +1,9 @@
 package config
 
 type RepublishConfig struct {
-	ItemsPerRequest  int
-	Goroutines       int
-	RequestPerSecond int
+	ItemsPerRequest   int
+	RequestPerSecond  int
+	LogSuccessfulPush bool
+	LogErrorPush      bool
+	LogProgress       bool
 }

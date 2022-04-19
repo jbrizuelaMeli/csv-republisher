@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type NumericID struct {
 	ID int64 `json:"id"`
 }
@@ -24,4 +26,12 @@ type ItemRequestMap struct {
 type ItemResponseMap struct {
 	Success map[int64][]string
 	Errors  map[int64][]string
+}
+
+type Report struct {
+	ID             string
+	TotalLines     int
+	ProcessedLines int
+	ErrorsQuantity int
+	DateLastRun    time.Time
 }

@@ -15,7 +15,10 @@ import (
 
 var (
 	republishConfig = config.RepublishConfig{
-		ItemsPerRequest: 90,
+		ItemsPerRequest:   5,
+		LogSuccessfulPush: false,
+		LogErrorPush:      true,
+		LogProgress:       false,
 	}
 	restClientConfig = restclient.Config{
 		TimeoutMillis: 3000,
@@ -34,7 +37,7 @@ var (
 
 func main() {
 	// open file to Read
-	fileR, err := os.Open("files/cashbacks-for-republish.csv")
+	fileR, err := os.Open("files/example.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,27 +70,50 @@ func main() {
 	return
 }
 
+//Multi mode
 func publishMultiMode(ctx context.Context, data [][]string, fileW io.Writer, repo *repository.Repository) {
-	//Multi mode
+	var processedLines, errorCounter int
 	toPublish := make([][]string, 0)
+	var lastRecords bool
+	var total = len(data)
 	for idx, line := range data {
-		toPublish = append(toPublish, line)
-		if republishConfig.ItemsPerRequest == len(toPublish) && idx > 0 {
+		if total-idx < republishConfig.ItemsPerRequest {
+			toPublish = data[idx:]
+			lastRecords = true
+		} else {
+			toPublish = append(toPublish, line)
+		}
+		if republishConfig.LogProgress {
+			log.Printf("Records processed: %v of %v", processedLines, total)
+		}
+		if republishConfig.ItemsPerRequest == len(toPublish) || lastRecords {
 			//MultiPublish array
 			response, err := repo.MultiPublish(ctx, toPublish)
 			if err != nil {
-				log.Println(err.Error())
+				if republishConfig.LogErrorPush {
+					log.Printf("Error at publishing: %s", err.Error())
+				}
+				errorCounter += len(toPublish)
 				_ = file.WriteAll(fileW, toPublish)
 				toPublish = make([][]string, 0)
-				continue
+				return
 			}
+			errorCounter += len(response.Errors)
 			for _, item := range response.Errors {
 				file.Write(fileW, item)
 			}
-			for _, item := range response.Success {
-				log.Printf("resource with id:%v processed", item)
+			if republishConfig.LogSuccessfulPush {
+				for _, item := range response.Success {
+					log.Printf("resource with id:%v processed", item)
+				}
 			}
+			processedLines += len(toPublish)
 			toPublish = make([][]string, 0)
+			if lastRecords {
+				break
+			}
 		}
 	}
+	log.Printf("Records processed: %v", processedLines)
+	log.Printf("Records with error: %v", errorCounter)
 }
